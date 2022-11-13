@@ -83,7 +83,7 @@ app.post('/service', async (req, res) => {
                 const date = new Date()
                 const fecha = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
                 const hora = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds()
-                const query = `INSERT INTO historial (fecha, hora, servicio, precio, metodo_pago, cuotas, id_persona) VALUES ('${fecha}', '${hora}', '${service.title}', ${service.price}, '${paymentMethod.proveedor + " *" + (paymentMethod.numero + "").substring(12, 16)}', ${paymentMethod.cuotas}, ${personalData.id})`
+                const query = `INSERT INTO historial (fecha, hora, servicio, precio, metodo_pago, id_persona) VALUES ('${fecha}', '${hora}', '${service.title}', ${service.price}, '${paymentMethod.banco + " " + (paymentMethod.numero + "")}', ${personalData.id})`
                 connection.query(query, (error, result) => {
                     if (error) throw error
                     // enviar correo
