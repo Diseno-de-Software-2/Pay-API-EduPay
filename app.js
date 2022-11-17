@@ -7,8 +7,11 @@ const axios = require('axios')
 const nodemailer = require('nodemailer')
 const setTerminalTitle = require('set-terminal-title');
 setTerminalTitle('Pay Service', { verbose: true });
+var portfinder = require('portfinder');
+portfinder.setBasePort(3250);
+portfinder.setHighestPort(3299);
 const HOST = 'localhost' // Change to actual host
-const PORT = 3250 || process.env.PORT
+var PORT;
 const DB_NAME = 'sistemainstitucional'
 const DB_USER = 'root'  //
 const DB_PASSWORD = 'root' //
@@ -132,23 +135,26 @@ async function sendEmail(message, email) {
     });
 }
 
-app.listen(PORT, async () => {
-    const response = await axios({
-        method: 'post',
-        url: `http://localhost:3000/register`,
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-            apiName: "pay",
-            protocol: "http",
-            host: HOST,
-            port: PORT,
-        }
-    })
-    await axios.post('http://localhost:3000/switch/pay', {
-        "url": "http://localhost:" + PORT,
-        "enabled": true
-    })
-    console.log(response.data)
-    console.log(`Pay server listening on port ${PORT}`)
-})
 
+portfinder.getPort(function (err, port) {
+    PORT = port
+    app.listen(PORT, async () => {
+        const response = await axios({
+            method: 'post',
+            url: `http://localhost:3000/register`,
+            headers: { 'Content-Type': 'application/json' },
+            data: {
+                apiName: "pay",
+                protocol: "http",
+                host: HOST,
+                port: PORT,
+            }
+        })
+        await axios.post('http://localhost:3000/switch/pay', {
+            "url": "http://localhost:" + PORT,
+            "enabled": true
+        })
+        console.log(response.data)
+        console.log(`Pay server listening on port ${PORT}`)
+    })
+})

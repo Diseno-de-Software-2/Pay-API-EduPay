@@ -18,6 +18,7 @@
     "morgan": "^1.10.0",
     "mysql2": "^2.3.3",
     "nodemailer": "^6.8.0",
+    "portfinder": "^1.0.32",
     "set-terminal-title": "^1.0.1"
   },
   "devDependencies": {
