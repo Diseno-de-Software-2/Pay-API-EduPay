@@ -1,6 +1,7 @@
 const express = require('express')
 const app = express()
 const cors = require('cors')
+const credentials = require('../db_credentials');
 const morgan = require('morgan')
 const mysql = require('mysql2')
 const axios = require('axios')
@@ -13,8 +14,8 @@ portfinder.setHighestPort(3299);
 const HOST = 'localhost' // Change to actual host
 var PORT;
 const DB_NAME = 'sistemainstitucional'
-const DB_USER = 'root'  //
-const DB_PASSWORD = 'root' //
+const DB_USER = credentials['DB_USER']
+const DB_PASSWORD = credentials['DB_PASSWORD']
 
 app.use(express.json())
 app.use(cors())
@@ -42,34 +43,43 @@ app.post('/service', async (req, res) => {
         const numero_tarjeta = paymentMethod.numero
         const numero_cuenta = 1111111111111111
         const monto = service.price
-        axios.post('http://localhost:5000/transaccion-tarjeta', {
-            numero_tarjeta,
-            numero_cuenta,
-            monto
-        }).then(response => {
-            console.log(response.data)
-            if (response.data === 'Transaccion exitosa') {
-                res.send('Transaccion exitosa')
-                // registrar en el historial
-                const date = new Date()
-                const fecha = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
-                const hora = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds()
-                const query = `INSERT INTO historial (fecha, hora, servicio, precio, metodo_pago, cuotas, id_persona) VALUES ('${fecha}', '${hora}', '${service.title}', ${service.price}, '${paymentMethod.proveedor + " *" + (paymentMethod.numero + "").substring(12, 16)}', ${paymentMethod.cuotas}, ${personalData.id})`
-                connection.query(query, (error, result) => {
-                    if (error) throw error
-                    // enviar correo
-                    sendEmail(`Se ha realizado una transaccion exitosa de ${service.price} a traves de ${paymentMethod.proveedor} con el numero de tarjeta ${paymentMethod.numero} y ${paymentMethod.cuotas} cuotas`, personalData.email)
-                })
-            } else {
-                res.status(400).send('Transaccion fallida')
-                // enviar correo con la info del response
-                sendEmail('La transaccion ha fallado, error: ' + response.data, personalData.email)
-            }
-        }).catch(error => {
-            console.log(error)
+        const fecha_vencimiento = paymentMethod.fecha
+        if (new Date(fecha_vencimiento) > Date.now()) {
+            axios.post('http://localhost:5000/transaccion-tarjeta', {
+                numero_tarjeta,
+                numero_cuenta,
+                monto
+            }).then(response => {
+
+                console.log(`Fecha vencimiento: ${Date(fecha_vencimiento)}`);
+                console.log(response.data)
+                if (response.data === 'Transaccion exitosa') {
+                    res.send('Transaccion exitosa')
+                    // registrar en el historial
+                    const date = new Date()
+                    const fecha = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
+                    const hora = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds()
+                    const query = `INSERT INTO historial (fecha, hora, servicio, precio, metodo_pago, cuotas, id_persona) VALUES ('${fecha}', '${hora}', '${service.title}', ${service.price}, '${paymentMethod.proveedor + " *" + (paymentMethod.numero + "").substring(12, 16)}', ${paymentMethod.cuotas}, ${personalData.id})`
+                    connection.query(query, (error, result) => {
+                        if (error) throw error
+                        // enviar correo
+                        sendEmail(`Se ha realizado una transaccion exitosa de ${service.price} a traves de ${paymentMethod.proveedor} con el numero de tarjeta ${paymentMethod.numero} y ${paymentMethod.cuotas} cuotas`, personalData.email)
+                    })
+                } else {
+                    res.status(400).send('Transaccion fallida')
+                    // enviar correo con la info del response
+                    sendEmail('La transaccion ha fallado, error: ' + response.data, personalData.email)
+                }
+            }).catch(error => {
+                console.log(error)
+                // enviar correo
+                sendEmail('La transaccion ha fallado', personalData.email)
+            })
+        } else {
+            res.status(400).send(`Tarjeta vencida`)
             // enviar correo
-            sendEmail('La transaccion ha fallado', personalData.email)
-        })
+            sendEmail('La transaccion ha fallado, error: Tarjeta vencida', personalData.email)
+        }
     } else if (paymentMethod.cuenta) {
         const numero_cuenta_origen = paymentMethod.numero
         const numero_cuenta_destino = 1111111111111111
