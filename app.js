@@ -100,11 +100,11 @@ app.post('/service', async (req, res) => {
                 connection.query(query, (error, result) => {
                     if (error) throw error
                     // enviar correo
-                    sendEmail(`Se ha realizado una transaccion exitosa de ${service.price} a traves de ${paymentMethod.proveedor} con el numero de cuenta ${paymentMethod.numero} y ${paymentMethod.cuotas} cuotas`, personalData.email)
+                    sendEmail(`Se ha realizado una transaccion exitosa de ${service.price} a traves de ${paymentMethod.banco} con el numero de cuenta ${paymentMethod.numero}.`, personalData.email)
                 })
-            } else if(response.data === 'Transacciones deshabilitadas'){
+            } else if (response.data === 'Transacciones deshabilitadas') {
                 return res.status(503).json({ message: 'Transacciones deshabilitadas por parte del banco', service: 'Transacciones bancarias' })
-            }else{
+            } else {
                 res.status(400).send('Transaccion fallida')
                 // enviar correo con la info del response
                 sendEmail('La transaccion ha fallado, error: ' + response.data, personalData.email)
