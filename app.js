@@ -39,7 +39,20 @@ connection.connect(error => {
 app.post('/service', async (req, res) => {
     const body = req.body
     const { personalData, paymentMethod, service } = body
+    let id;
+
+
+
     if (paymentMethod.tarjeta) {
+        const date = new Date()
+        const fecha = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
+        const hora = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds()
+        const query = `INSERT INTO historial (fecha, hora, servicio, precio, metodo_pago, cuotas, id_persona, exitoso) VALUES ('${fecha}', '${hora}', '${service.title}', ${service.price}, '${paymentMethod.proveedor + " *" + (paymentMethod.numero + "").substring(12, 16)}', ${paymentMethod.cuotas}, ${personalData.id}, ${false})`
+        connection.query(query, (error, result) => {
+            if (error) throw error
+            id = result.insertId
+        })
+
         const numero_tarjeta = paymentMethod.numero
         const numero_cuenta = 1111111111111111
         const monto = service.price
@@ -55,12 +68,8 @@ app.post('/service', async (req, res) => {
                 console.log(response.data)
                 if (response.data === 'Transaccion exitosa') {
                     res.send('Transaccion exitosa')
-                    // registrar en el historial
-                    const date = new Date()
-                    const fecha = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
-                    const hora = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds()
-                    const query = `INSERT INTO historial (fecha, hora, servicio, precio, metodo_pago, cuotas, id_persona) VALUES ('${fecha}', '${hora}', '${service.title}', ${service.price}, '${paymentMethod.proveedor + " *" + (paymentMethod.numero + "").substring(12, 16)}', ${paymentMethod.cuotas}, ${personalData.id})`
-                    connection.query(query, (error, result) => {
+                    // change exitoso to true
+                    connection.query(`UPDATE historial SET exitoso = ${true} WHERE id = ${id}`, (error, result) => {
                         if (error) throw error
                         // enviar correo
                         sendEmail(`Se ha realizado una transaccion exitosa de ${service.price} a traves de ${paymentMethod.proveedor} con el numero de tarjeta ${paymentMethod.numero} y ${paymentMethod.cuotas} cuotas`, personalData.email)
@@ -81,6 +90,15 @@ app.post('/service', async (req, res) => {
             sendEmail('La transaccion ha fallado, error: Tarjeta vencida', personalData.email)
         }
     } else if (paymentMethod.cuenta) {
+        const date = new Date()
+        const fecha = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
+        const hora = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds()
+        let query = `INSERT INTO historial (fecha, hora, servicio, precio, metodo_pago, id_persona, exitoso) VALUES ('${fecha}', '${hora}', '${service.title}', ${service.price}, '${paymentMethod.banco + " " + (paymentMethod.numero + "")}', ${personalData.id}, ${false})`
+        connection.query(query, (error, result) => {
+            if (error) throw error
+            id = result.insertId
+        })
+
         const numero_cuenta_origen = paymentMethod.numero
         const numero_cuenta_destino = 1111111111111111
         const monto = service.price
@@ -93,10 +111,7 @@ app.post('/service', async (req, res) => {
             if (response.data === 'Transaccion exitosa') {
                 res.send('Transaccion exitosa')
                 // registrar en el historial
-                const date = new Date()
-                const fecha = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
-                const hora = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds()
-                const query = `INSERT INTO historial (fecha, hora, servicio, precio, metodo_pago, id_persona) VALUES ('${fecha}', '${hora}', '${service.title}', ${service.price}, '${paymentMethod.banco + " " + (paymentMethod.numero + "")}', ${personalData.id})`
+                query = `UPDATE historial SET exitoso = ${true} WHERE id = ${id}`
                 connection.query(query, (error, result) => {
                     if (error) throw error
                     // enviar correo
