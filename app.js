@@ -47,6 +47,8 @@ app.post('/service', async (req, res) => {
         const date = new Date()
         const fecha = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
         const hora = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds()
+
+        // insert transaccion pendiente
         const query = `INSERT INTO historial (fecha, hora, servicio, precio, metodo_pago, cuotas, id_persona, exitoso) VALUES ('${fecha}', '${hora}', '${service.title}', ${service.price}, '${paymentMethod.proveedor + " *" + (paymentMethod.numero + "").substring(12, 16)}', ${paymentMethod.cuotas}, ${personalData.id}, ${false})`
         connection.query(query, (error, result) => {
             if (error) throw error
@@ -93,6 +95,7 @@ app.post('/service', async (req, res) => {
         const date = new Date()
         const fecha = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
         const hora = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds()
+        // insert transaccion pendiente
         let query = `INSERT INTO historial (fecha, hora, servicio, precio, metodo_pago, id_persona, exitoso) VALUES ('${fecha}', '${hora}', '${service.title}', ${service.price}, '${paymentMethod.banco + " " + (paymentMethod.numero + "")}', ${personalData.id}, ${false})`
         connection.query(query, (error, result) => {
             if (error) throw error
