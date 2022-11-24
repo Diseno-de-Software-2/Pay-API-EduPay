@@ -61,7 +61,7 @@ app.post('/service', async (req, res) => {
         const fecha_vencimiento = paymentMethod.fecha
         if (new Date(fecha_vencimiento) > Date.now()) {
             axios.post('http://localhost:5000/transaccion-tarjeta', {
-                numero_tarjeta,
+                paymentMethod,
                 numero_cuenta,
                 monto
             }).then(response => {
@@ -106,7 +106,7 @@ app.post('/service', async (req, res) => {
         const numero_cuenta_destino = 1111111111111111
         const monto = service.price
         axios.post('http://localhost:5000/transaccion-cuenta', {
-            numero_cuenta_origen,
+            paymentMethod,
             numero_cuenta_destino,
             monto
         }).then(response => {
